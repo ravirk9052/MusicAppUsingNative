@@ -7,14 +7,14 @@ export default function CustomProgressBar() {
   const { position, buffered, duration } = useProgress();
   const [isSeeking, setIsSeeking] = useState(false);
 
-  const handleSeek = async (event: GestureResponderEvent) => {
-    // console.log('11',event)
-    const width = event.nativeEvent.locationX; 
-    const newPosition = (width / event.nativeEvent.contentWidth) * duration; 
-    setIsSeeking(true);
-    await TrackPlayer.seekTo(newPosition); 
-    setIsSeeking(false); 
-  };
+  // const handleSeek = async (event: GestureResponderEvent) => {
+  //   // console.log('11',event)
+  //   const width = event.nativeEvent.locationX; 
+  //   const newPosition = (width / event.nativeEvent.contentWidth) * duration; 
+  //   setIsSeeking(true);
+  //   await TrackPlayer.seekTo(newPosition); 
+  //   setIsSeeking(false); 
+  // };
 
   const progress = duration ? position / duration : 0;
   const bufferedProgress = duration ? buffered / duration : 0;
@@ -29,7 +29,7 @@ export default function CustomProgressBar() {
   return (
     <View style={styles.container}>
       {/* <Text style={styles.text}>Custom Progress Bar</Text> */}
-      <TouchableWithoutFeedback onPress={handleSeek}>
+      <TouchableWithoutFeedback>
         <View style={styles.progressContainer}>
           <View
             style={[styles.bufferedBar, { width: `${bufferedProgress * 100}%` }]}

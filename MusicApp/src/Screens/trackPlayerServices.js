@@ -121,10 +121,7 @@ export async function playbackService() {
     // console.log('109==>', event.position);
     await TrackPlayer.seekTo(event.position);
   });
-  // TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async () => {
-  //   const currentTrack = await TrackPlayer.getTrack(TrackPlayer.getActiveTrack());
-  //   updateUIWithTrackInfo(currentTrack);
-  // });
+
 
   // TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async () => {
   //   const currentTrack = await TrackPlayer.getTrack(TrackPlayer.getActiveTrack());

@@ -1,9 +1,10 @@
-import {Component} from 'react';
+import {act, Component} from 'react';
 import {
   FlatList,
   Image,
   ImageBackground,
   Modal,
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -25,6 +26,7 @@ import Icons from 'react-native-vector-icons/FontAwesome6';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import CustomProgressBar from './CustomProgressBar';
 import {addTracks, setupPlayer} from './trackPlayerServices';
+import AudioHeader from './AudioHeader';
 interface IProps {}
 
 interface IState {
@@ -56,6 +58,15 @@ interface ITrending {
 interface IMusicWithIndex {
   index: number;
   item: IMusic;
+}
+
+interface AddTrack {
+  id: string;
+  url: string;
+  title: string;
+  artist: string;
+  artwork?: string;
+  duration?: number;
 }
 
 interface IMusic {
@@ -181,8 +192,10 @@ class AudioPlayer extends Component<IProps, IState> {
 
   setUp = async () => {
     let isSetup = await setupPlayer();
+    // console.log('195==>',isSetup)
 
     const queue = await TrackPlayer.getQueue();
+    // console.log('195==>',queue.length)
     if (isSetup && queue.length <= 0) {
       await addTracks();
     }
@@ -193,10 +206,32 @@ class AudioPlayer extends Component<IProps, IState> {
   componentDidMount() {
     this.setUp();
     // this.callForTrackPlayer();
+
     // this.setupTrackChangeListener();
   }
 
+  callForTrackPlayer = () => {
+    TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async () => {
+      // console.log('125==> Ravikiran');
+      const activeTrack = await TrackPlayer.getActiveTrack();
+      // console.log('206-==>', activeTrack);
+      if (activeTrack) {
+        const track = {
+          title: activeTrack.title,
+          artist: activeTrack.artist,
+          artwork: activeTrack.artwork,
+          url: activeTrack.url,
+          id: activeTrack.id.toString(),
+          duration: activeTrack.duration?.toString(),
+          length: activeTrack.length.toString(),
+        };
 
+        this.setState({clickedObject: track as IMusic});
+      } else {
+        this.setState({pausePlayButton: false});
+      }
+    });
+  };
 
   clearSliderInterval = () => {
     if (this.state.timer) {
@@ -220,7 +255,16 @@ class AudioPlayer extends Component<IProps, IState> {
 
     const isTrackInQueue = queue.some(track => track.id === eachItem.id);
     if (!isTrackInQueue) {
-      await TrackPlayer.add(eachItem);
+      const track: AddTrack = {
+        id: eachItem.id,
+        url: eachItem.url,
+        title: eachItem.title,
+        artist: eachItem.artist,
+        artwork: eachItem.artwork,
+        duration: parseFloat(eachItem.duration),
+      };
+      // await TrackPlayer.add(eachItem);
+      await TrackPlayer.add(track);
     }
     await TrackPlayer.skip(index);
     const activeTrack = await TrackPlayer.getActiveTrack();
@@ -228,6 +272,7 @@ class AudioPlayer extends Component<IProps, IState> {
     this.clearSliderInterval();
     this.onPressPauseButton();
     await TrackPlayer.play();
+    this.callForTrackPlayer();
   };
 
   onPressPauseButton = async () => {
@@ -279,7 +324,7 @@ class AudioPlayer extends Component<IProps, IState> {
 
   forwardToTenSeconds = async () => {
     const currentPosition = await TrackPlayer.getPosition();
-    console.log('Current Position:', currentPosition);
+    // console.log('Current Position:', currentPosition);
     const newPosition = currentPosition + 10;
     const duration = await TrackPlayer.getDuration();
     const finalPosition = Math.min(newPosition, duration);
@@ -300,23 +345,46 @@ class AudioPlayer extends Component<IProps, IState> {
   skipToPreviousMusic = async () => {
     await TrackPlayer.skipToPrevious();
     const activedObject = await TrackPlayer.getActiveTrack();
-    this.setState({
-      clickedObject: activedObject,
-      pausePlayButton: true,
-      sliderValue: 0,
-    });
-    await TrackPlayer.play();
+    if (activedObject) {
+      const track = {
+        title: activedObject.title,
+        artist: activedObject.artist,
+        artwork: activedObject.artwork,
+        url: activedObject.url,
+        id: activedObject.id.toString(),
+        duration: activedObject.duration?.toString(),
+        length: activedObject.length.toString(),
+      };
+      this.setState({
+        clickedObject: track as IMusic,
+        pausePlayButton: true,
+        sliderValue: 0,
+      });
+      await TrackPlayer.play();
+      // this.setState({clickedObject: track as IMusic, pausePlayButton: true});
+    }
   };
 
   skipToNextMusic = async () => {
     await TrackPlayer.skipToNext();
     const activedObject = await TrackPlayer.getActiveTrack();
-    this.setState({
-      clickedObject: activedObject,
-      pausePlayButton: true,
-      sliderValue: 0,
-    });
-    await TrackPlayer.play();
+    if (activedObject) {
+      const track = {
+        title: activedObject.title,
+        artist: activedObject.artist,
+        artwork: activedObject.artwork,
+        url: activedObject.url,
+        id: activedObject.id.toString(),
+        duration: activedObject.duration?.toString(),
+        length: activedObject.length.toString(),
+      };
+      this.setState({
+        clickedObject: track as IMusic,
+        pausePlayButton: true,
+        sliderValue: 0,
+      });
+      await TrackPlayer.play();
+    }
   };
 
   modalCloseButton = () => {
@@ -368,7 +436,7 @@ class AudioPlayer extends Component<IProps, IState> {
 
   renderTrendingItem = (item: ITrendingWithIndex) => {
     // console.log("386", item)
-    const  eachItem = item.item;
+    const eachItem = item.item;
     return (
       <View>
         {eachItem.isActive ? (
@@ -395,8 +463,19 @@ class AudioPlayer extends Component<IProps, IState> {
     await TrackPlayer.skipToNext();
     const activedObject = await TrackPlayer.getActiveTrack();
     // console.log('397==>',activedObject)
-    this.setState({clickedObject: activedObject})
-  }
+    if (activedObject) {
+      const track = {
+        title: activedObject.title,
+        artist: activedObject.artist,
+        artwork: activedObject.artwork,
+        url: activedObject.url,
+        id: activedObject.id.toString(),
+        duration: activedObject.duration?.toString(),
+        length: activedObject.length.toString(),
+      };
+      this.setState({clickedObject: track as IMusic});
+    }
+  };
 
   render() {
     const {modalVisible, clickedObject, sliderValue, pausePlayButton} =
@@ -405,10 +484,13 @@ class AudioPlayer extends Component<IProps, IState> {
     const totalTimeInSeconds = parseInt(length) * 60;
     const progress = (sliderValue / totalTimeInSeconds) * 100;
 
+    console.log('486==>',pausePlayButton)
+
     return (
-      <SafeAreaView style={{flex: 1}}>
+      <View>
         <View style={styles.mainContainer}>
-          <View style={styles.headerContainer}>
+          <AudioHeader />
+          {/* <View style={styles.headerContainer}>
             <View style={styles.AfterNoonContainer}>
               <Text style={styles.afterText}>Good Afternoon</Text>
               <Image
@@ -422,8 +504,8 @@ class AudioPlayer extends Component<IProps, IState> {
                 style={styles.profileLogo}
               />
             </View>
-          </View>
-          <View style={{marginTop: 15, marginBottom: 15}}>
+          </View> */}
+          <View style={{marginVertical: 10}}>
             <FlatList
               data={trendingArray}
               renderItem={this.renderTrendingItem}
@@ -448,14 +530,25 @@ class AudioPlayer extends Component<IProps, IState> {
                 <AntDesign name="rightcircle" color="#CDE7BE" size={25} />
               </View>
             </View>
-            <FlatList
-              data={MusicArray}
-              renderItem={this.renderMusicItem}
-              horizontal={true}
-              contentContainerStyle={styles.flatListContainerStyle}
-              keyExtractor={item => item.id.toString()}
-              showsHorizontalScrollIndicator={false}
-            />
+            <View
+              style={{
+                // borderWidth: 2,
+                // borderColor: 'green',
+                marginTop: -35,
+                marginBottom: 10,
+                // marginVertical: -35,
+                // marginBottom: -40,
+                height: responsiveHeight(35),
+              }}>
+              <FlatList
+                data={MusicArray}
+                renderItem={this.renderMusicItem}
+                horizontal={true}
+                contentContainerStyle={styles.flatListContainerStyle}
+                keyExtractor={item => item.id.toString()}
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
 
             {clickedObject.url !== '' && (
               <TouchableOpacity
@@ -488,11 +581,13 @@ class AudioPlayer extends Component<IProps, IState> {
                     </TouchableOpacity>
                   )}
 
-                  <TouchableHighlight onPress={() => this.onPressDoubleClickIcon(clickedObject)}>
-                  <Image
-                    source={require('../assets/images/doublePause.png')}
-                    style={{width: 36, height: 36}}
-                  /></TouchableHighlight>
+                  <TouchableHighlight
+                    onPress={() => this.onPressDoubleClickIcon(clickedObject)}>
+                    <Image
+                      source={require('../assets/images/doublePause.png')}
+                      style={{width: 36, height: 36}}
+                    />
+                  </TouchableHighlight>
                 </View>
               </TouchableOpacity>
             )}
@@ -606,46 +701,25 @@ class AudioPlayer extends Component<IProps, IState> {
             </View>
           </Modal>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
-    height: responsiveHeight(100),
+    // flex: 1,
+    // height: responsiveHeight(100),
     padding: 5,
     backgroundColor: 'black',
+    position: 'relative'
   },
-  headerContainer: {
-    padding: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: responsiveHeight(10),
-  },
-  AfterNoonContainer: {},
-  afterText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 700,
-    paddingVertical: 15,
-  },
-  profileContainer: {
-    width: 55,
-    height: 55,
-  },
-  profileLogo: {
-    width: 60,
-    height: 60,
-  },
-  vectorLogo: {
-    width: 65,
-    marginTop: -5,
-  },
+
   mainFrameContainer: {
     width: responsiveWidth(98),
-    height: responsiveHeight(28),
+    // height: responsiveHeight(30),
+    // width: 358,
+    height: 221,
     padding: 6,
     marginBottom: 15,
   },
@@ -672,7 +746,6 @@ const styles = StyleSheet.create({
     color: '#EAF4F4',
   },
   flatListContainerStyle: {
-    marginTop: -30,
   },
   iconContainer: {
     flexDirection: 'row',
@@ -693,8 +766,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     color: 'white',
-    marginBottom: 5,
-    marginTop: 5,
+    // borderWidth: 2,
+    // borderColor: 'green',
+    // margin
+    // marginBottom: -15,
+    // marginTop: -15,
   },
   trendingText: {
     color: 'white',
@@ -812,8 +888,14 @@ const styles = StyleSheet.create({
     width: responsiveWidth(98),
     flexDirection: 'row',
     height: 90,
-    position: 'relative',
-    bottom: 10,
+    // marginVertical: 70,
+    // position: 'absolute',
+    // bottom: 0,
+    bottom: Platform.OS === 'android' ? -40 : 0,
+    // borderColor: 'green',
+    // borderWidth:3,
+
+    // bottom: -75,
     borderTopColor: '#CDE7BE',
     borderTopWidth: 1,
   },
@@ -838,28 +920,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,
-  },
-  sliderContainer: {
-    height: 3,
-    marginLeft: 5,
-    width: responsiveWidth(96),
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'gray',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: 'white',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    borderRadius: 5,
-  },
-  timerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 7,
-    paddingTop: 5,
   },
   pausePlayContainer: {
     flexDirection: 'row',
